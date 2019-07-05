@@ -2035,6 +2035,7 @@ int main(int argc, char *argv[])
         }
 
         printf("Game ID: %s\n", desc_gen);
+        printf("Seed: %lx\n", seed);
     } else {
         game_state *input;
         struct unruly_scratch *scratch;
