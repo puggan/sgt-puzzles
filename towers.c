@@ -2085,7 +2085,6 @@ int main(int argc, char **argv)
     if (id && desc) {
         *desc++ = '\0';
 
-        decode_params(p, id);
         err = validate_desc(p, desc);
         if (err) {
             fprintf(stderr, "%s: %s\n", argv[0], err);
