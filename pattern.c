@@ -2030,18 +2030,28 @@ const struct game thegame = {
 };
 
 #ifdef STANDALONE_SOLVER
+#include <time.h>
 
 int main(int argc, char **argv)
 {
+    time_t seed = time(NULL);
     game_params *p;
     game_state *s;
     char *id = NULL, *desc;
     const char *err;
+    bool generate = false;
 
     while (--argc > 0) {
         char *p = *++argv;
 	if (*p == '-') {
-	    if (!strcmp(p, "-v")) {
+        if (!strcmp(p, "--seed")) {
+            if (argc == 0) {
+                fprintf(stderr, "--seed needs an argument");
+                return 1;
+            }
+            seed = (time_t) atoi(*++argv);
+            argc--;
+        } else if (!strcmp(p, "-v")) {
 		verbose = true;
 	    } else {
 		fprintf(stderr, "%s: unrecognised option `%s'\n", argv[0], p);
@@ -2052,26 +2062,34 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!id) {
-        fprintf(stderr, "usage: %s <game_id>\n", argv[0]);
-        return 1;
-    }
-
-    desc = strchr(id, ':');
-    if (!desc) {
-        fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
-        return 1;
-    }
-    *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
-    err = validate_desc(p, desc);
-    if (err) {
-        fprintf(stderr, "%s: %s\n", argv[0], err);
-        return 1;
+    if (id) {
+        desc = strchr(id, ':');
+        if (!desc) {
+            fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
+            return 1;
+        }
+        *desc++ = '\0';
+
+        decode_params(p, id);
+        err = validate_desc(p, desc);
+        if (err) {
+            fprintf(stderr, "%s: %s\n", argv[0], err);
+            return 1;
+        }
+    } else {
+        generate = true;
+        random_state *rs = random_new((void*)&seed, sizeof(time_t));
+        desc = new_game_desc(p, rs, NULL, false);
     }
+
     s = new_game(NULL, p, desc);
+    if(generate) {
+        char *params = encode_params(p, true);
+        printf("Game ID: %s:%s\n", params, desc);
+        printf("Seed: %ld\n", seed);
+        return 0;
+    }
 
     {
 	int w = p->w, h = p->h, i, j, max, cluewid = 0;
