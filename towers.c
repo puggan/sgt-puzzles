@@ -601,6 +601,14 @@ static int solver(int w, int *clues, digit *soln, int maxdiff)
  * Grid generation.
  */
 
+static char char_table(const char i)
+{
+    if(i < 1) return ' ';
+    if(i < 10) return '0' + i;
+    if(i < 35) return 'A' + i - 10;
+    return 'a' + i - 35;
+}
+
 static char *new_game_desc(const game_params *params, random_state *rs,
 			   char **aux, bool interactive)
 {
@@ -783,7 +791,7 @@ done
     *aux = snewn(a+2, char);
     (*aux)[0] = 'S';
     for (i = 0; i < a; i++)
-	(*aux)[i+1] = '0' + soln[i];
+	(*aux)[i+1] = char_table(soln[i]);
     (*aux)[a+1] = '\0';
 
     sfree(grid);
@@ -1012,7 +1020,7 @@ static char *solve_game(const game_state *state, const game_state *currstate,
 	out = snewn(a+2, char);
 	out[0] = 'S';
 	for (i = 0; i < a; i++)
-	    out[i+1] = '0' + soln[i];
+	    out[i+1] = char_table(soln[i]);
 	out[a+1] = '\0';
     }
 
@@ -1057,7 +1065,7 @@ static char *game_text_format(const game_state *state)
     *p++ = ' '; *p++ = ' ';
     for (x = 0; x < w; x++) {
 	*p++ = ' ';
-	*p++ = (state->clues->clues[x] ? '0' + state->clues->clues[x] : ' ');
+	*p++ = char_table(state->clues->clues[x]);
     }
     *p++ = '\n';
 
@@ -1066,16 +1074,14 @@ static char *game_text_format(const game_state *state)
 
     /* Main grid. */
     for (y = 0; y < w; y++) {
-	*p++ = (state->clues->clues[y+2*w] ? '0' + state->clues->clues[y+2*w] :
-		' ');
+	*p++ = char_table(state->clues->clues[y+2*w]);
 	*p++ = ' ';
 	for (x = 0; x < w; x++) {
 	    *p++ = ' ';
-	    *p++ = (state->grid[y*w+x] ? '0' + state->grid[y*w+x] : ' ');
+	    *p++ = char_table(state->grid[y*w+x]);
 	}
 	*p++ = ' '; *p++ = ' ';
-	*p++ = (state->clues->clues[y+3*w] ? '0' + state->clues->clues[y+3*w] :
-		' ');
+	*p++ = char_table(state->clues->clues[y+3*w]);
 	*p++ = '\n';
     }
 
@@ -1086,8 +1092,7 @@ static char *game_text_format(const game_state *state)
     *p++ = ' '; *p++ = ' ';
     for (x = 0; x < w; x++) {
 	*p++ = ' ';
-	*p++ = (state->clues->clues[x+w] ? '0' + state->clues->clues[x+w] :
-		' ');
+	*p++ = char_table(state->clues->clues[x+w]);
     }
     *p++ = '\n';
 
