@@ -3669,10 +3669,6 @@ static char *new_game_desc(const game_params *params, random_state *rs,
     kblocks = NULL;
     kgrid = (params->killer) ? snewn(area, digit) : NULL;
 
-#ifdef STANDALONE_SOLVER
-    assert(!"This should never happen, so we don't need to create blocknames");
-#endif
-
     /*
      * Loop until we get a grid of the required difficulty. This is
      * nasty, but it seems to be unpleasantly hard to generate
@@ -5630,19 +5626,28 @@ const struct game thegame = {
 };
 
 #ifdef STANDALONE_SOLVER
+#include <time.h>
 
 int main(int argc, char **argv)
 {
+    time_t seed = time(NULL);
     game_params *p;
     game_state *s;
     char *id = NULL, *desc;
     const char *err;
-    bool grade = false;
+    bool grade = false, generate = false;
     struct difficulty dlev;
 
     while (--argc > 0) {
         char *p = *++argv;
-        if (!strcmp(p, "-v")) {
+        if (!strcmp(p, "--seed")) {
+            if (argc == 0) {
+                fprintf(stderr, "--seed needs an argument");
+                return 1;
+            }
+            seed = (time_t) atoi(*++argv);
+            argc--;
+        } else if (!strcmp(p, "-v")) {
             solver_show_working = true;
         } else if (!strcmp(p, "-g")) {
             grade = true;
@@ -5654,20 +5659,25 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-g | -v] <game_id>\n", argv[0]);
-        return 1;
-    }
-
-    desc = strchr(id, ':');
-    if (!desc) {
-        fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
-        return 1;
-    }
-    *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
+
+    if (id) {
+        desc = strchr(id, ':');
+        if (!desc) {
+            fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
+            return 1;
+        }
+        *desc++ = '\0';
+
+        decode_params(p, id);
+    } else {
+        char *aux = NULL;
+        p->diff = DIFF_BLOCK;
+        p->killer = DIFF_KSINGLE;
+        random_state *rs = random_new((void *) &seed, sizeof(time_t));
+        desc = new_game_desc(p, rs, &aux, false);
+        generate = true;
+    }
     err = validate_desc(p, desc);
     if (err) {
         fprintf(stderr, "%s: %s\n", argv[0], err);
@@ -5675,8 +5685,15 @@ int main(int argc, char **argv)
     }
     s = new_game(NULL, p, desc);
 
+
     dlev.maxdiff = DIFF_RECURSIVE;
     dlev.maxkdiff = DIFF_KINTERSECT;
+    if(generate) {
+        printf("Solo: %s\n", encode_params(p, true));
+        printf("%s\n", game_text_format(s));
+        printf("Seed: %ld\n", seed);
+        return 0;
+    }
     solver(s->cr, s->blocks, s->kblocks, s->xtype, s->grid, s->kgrid, &dlev);
     if (grade) {
 	printf("Difficulty rating: %s\n",
