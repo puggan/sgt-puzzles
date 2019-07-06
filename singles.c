@@ -1919,7 +1919,7 @@ static void start_soak(game_params *p, random_state *rs)
 
 int main(int argc, char **argv)
 {
-    char *id = NULL, *desc, *desc_gen = NULL, *tgame, *aux;
+    char *id = NULL, *desc = NULL, *desc_gen = NULL, *tgame, *aux;
     const char *err;
     game_state *s = NULL;
     game_params *p = NULL;
@@ -1953,21 +1953,21 @@ int main(int argc, char **argv)
 
     rs = random_new((void*)&seed, sizeof(time_t));
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-v] [--soak] <params> | <game_id>\n", argv[0]);
-        goto done;
-    }
-    desc = strchr(id, ':');
-    if (desc) *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
-    err = validate_params(p, true);
-    if (err) {
-        fprintf(stderr, "%s: %s", argv[0], err);
-        goto done;
+    if (id) {
+        decode_params(p, id);
+        desc = strchr(id, ':');
     }
 
+    if (id && desc) {
+        *desc++ = '\0';
+
+        err = validate_params(p, true);
+        if (err) {
+            fprintf(stderr, "%s: %s", argv[0], err);
+            goto done;
+        }
+    }
     if (soak) {
         if (desc) {
             fprintf(stderr, "%s: --soak only needs params, not game desc.\n", argv[0]);
@@ -1985,6 +1985,13 @@ int main(int argc, char **argv)
         }
         s = new_game(NULL, p, desc);
 
+        if(!verbose && desc_gen) {
+            printf("Singles: %s\n", encode_params(p, true));
+            printf("Game ID: %s\n", desc);
+            printf("Seed: %ld\n", seed);
+            printf("%s\n", game_text_format(s));
+            return 0;
+        }
         if (verbose) {
             tgame = game_text_format(s);
             fputs(tgame, stdout);
