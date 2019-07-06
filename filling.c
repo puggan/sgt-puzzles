@@ -2173,30 +2173,72 @@ const struct game thegame = {
 };
 
 #ifdef STANDALONE_SOLVER /* solver? hah! */
+#include <time.h>
 
 int main(int argc, char **argv) {
-    while (*++argv) {
-        game_params *params;
-        game_state *state;
-        char *par;
-        char *desc;
+    game_params *p;
+    game_state *state;
+    char *id = NULL, *desc = NULL;
+    const char *err = NULL;
+    bool generate = false;
+    time_t seed = time(NULL);
 
-        for (par = desc = *argv; *desc != '\0' && *desc != ':'; ++desc);
-        if (*desc == '\0') {
-            fprintf(stderr, "bad puzzle id: %s", par);
-            continue;
+    while (--argc > 0) {
+        char *p = *++argv;
+        if (!strcmp(p, "--seed")) {
+            if (argc == 0) {
+                fprintf(stderr, "--seed needs an argument");
+                return 1;
+            }
+            seed = (time_t) atoi(*++argv);
+            argc--;
+//            } else if (!strcmp(p, "-v")) {
+//                really_show_working = true;
+//            } else if (!strcmp(p, "-g")) {
+//                grade = true;
+        } else if (*p == '-') {
+            fprintf(stderr, "%s: unrecognised option `%s'\n", argv[0], p);
+            return 1;
+        } else {
+            id = p;
         }
+    }
 
+    p = default_params();
+    if (id) {
+        decode_params(p, id);
+        desc = strchr(id, ':');
+    }
+    if (id && desc) {
         *desc++ = '\0';
 
-        params = snew(game_params);
-        decode_params(params, par);
-        state = new_game(NULL, params, desc);
-        if (solver(state->board, params->w, params->h, NULL))
-            printf("%s:%s: solvable\n", par, desc);
-        else
-            printf("%s:%s: not solvable\n", par, desc);
+        err = validate_desc(p, desc);
+        if (err) {
+            fprintf(stderr, "%s: %s\n", argv[0], err);
+            return 1;
+        }
+    } else {
+        char *aux = NULL;
+        random_state *rs = random_new((void *) &seed, sizeof(time_t));
+        desc = new_game_desc(p, rs, &aux, false);
+        generate = true;
     }
+
+    state = new_game(NULL, p, desc);
+
+    if(generate) {
+        printf("Filling: %s\n", encode_params(p, true));
+        printf("Game ID: %s\n", desc);
+        printf("Seed: %ld\n", seed);
+        printf("%s\n", game_text_format(state));
+        return 0;
+    }
+
+    char *status = "not solvable";
+    if (solver(state->board, p->w, p->h, NULL))
+        status = "solvable";
+    printf("%s:%s: %s\n", encode_params(p, true), desc, status);
+
     return 0;
 }
 
