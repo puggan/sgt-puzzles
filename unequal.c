@@ -2247,6 +2247,7 @@ int main(int argc, const char *argv[])
     random_state *rs;
     time_t seed = time(NULL);
     int do_soak = 0, diff;
+    bool verbose = false;
 
     game_params *p;
 
@@ -2257,6 +2258,8 @@ int main(int argc, const char *argv[])
         const char *p = *++argv;
         if (!strcmp(p, "--soak"))
             do_soak = 1;
+        else if (!strcmp(p, "-v"))
+            verbose = true;
         else if (!strcmp(p, "--seed")) {
             if (argc == 0)
                 usage_exit("--seed needs an argument");
@@ -2289,20 +2292,18 @@ int main(int argc, const char *argv[])
                     fprintf(stderr, "%s: %s\n", quis, err);
                     exit(1);
                 }
-                solve(p, desc, 1);
+                solve(p, desc, verbose);
             } else {
                 decode_params(p, id);
-                diff = gen(p, rs, 1);
+                diff = gen(p, rs, verbose);
             }
         }
     } else {
-        while(1) {
             p = default_params();
             p->order = random_upto(rs, 7) + 3;
             p->diff = random_upto(rs, 4);
-            diff = gen(p, rs, 0);
+            diff = gen(p, rs, verbose);
             pdiff(diff);
-        }
     }
 
     return 0;
