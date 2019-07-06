@@ -2691,7 +2691,7 @@ int main(int argc, char **argv)
     }
     s = new_game(NULL, p, desc);
     if(generate) {
-        printf("Towers: %s\n", encode_params(p, true));
+        printf("Tents: %s\n", encode_params(p, true));
         printf("Game ID: %s\n", desc);
         printf("Seed: %ld\n", seed);
         printf("%s\n", game_text_format(s));
