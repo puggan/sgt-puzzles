@@ -3728,7 +3728,7 @@ static void dump_state(game_state *state)
     sfree(temp);
 }
 
-static int gen(game_params *p, random_state *rs, bool debug)
+static int gen(game_params *p, random_state *rs, bool debug, time_t seed)
 {
     char *desc;
     int diff;
@@ -3747,6 +3747,7 @@ static int gen(game_params *p, random_state *rs, bool debug)
     diff = solver_state(state, DIFF_UNREASONABLE);
     printf("Generated %s game %dx%d:%s\n",
            galaxies_diffnames[diff], p->w, p->h, desc);
+    printf("Seed: %ld\n", seed);
     dump_state(state);
 
     free_game(state);
@@ -3844,19 +3845,17 @@ int main(int argc, char **argv)
     }
 
     if (!id) {
-        while (1) {
-            p->w = random_upto(rs, 15) + 3;
-            p->h = random_upto(rs, 15) + 3;
-            p->diff = random_upto(rs, DIFF_UNREASONABLE);
-            diff = gen(p, rs, false);
-        }
+        p->w = random_upto(rs, 15) + 3;
+        p->h = random_upto(rs, 15) + 3;
+        p->diff = random_upto(rs, DIFF_UNREASONABLE);
+        diff = gen(p, rs, false, seed);
         return 0;
     }
 
     desc = strchr(id, ':');
     if (!desc) {
         decode_params(p, id);
-        gen(p, rs, verbose);
+        gen(p, rs, verbose, seed);
     } else {
 #ifndef DEBUGGING
         solver_show_working = true;
