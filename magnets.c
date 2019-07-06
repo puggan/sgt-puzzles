@@ -2549,7 +2549,7 @@ int main(int argc, const char *argv[])
 {
     bool print = false, soak = false, solved = false;
     int ret;
-    char *id = NULL, *desc, *desc_gen = NULL, *aux = NULL;
+    char *id = NULL, *desc = NULL, *desc_gen = NULL, *aux = NULL;
     const char *err;
     game_state *s = NULL;
     game_params *p = NULL;
@@ -2583,19 +2583,19 @@ int main(int argc, const char *argv[])
 
     rs = random_new((void*)&seed, sizeof(time_t));
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-v] [--soak] <params> | <game_id>\n", argv[0]);
-        goto done;
-    }
-    desc = strchr(id, ':');
-    if (desc) *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
-    err = validate_params(p, true);
-    if (err) {
-        fprintf(stderr, "%s: %s", argv[0], err);
-        goto done;
+    if (id) {
+        decode_params(p, id);
+        desc = strchr(id, ':');
+    }
+    if (id && desc) {
+        *desc++ = '\0';
+
+        err = validate_params(p, true);
+        if (err) {
+            fprintf(stderr, "%s: %s", argv[0], err);
+            goto done;
+        }
     }
 
     if (soak) {
@@ -2616,7 +2616,8 @@ int main(int argc, const char *argv[])
         goto done;
     }
     s = new_game(NULL, p, desc);
-    printf("%s:%s (seed %ld)\n", id, desc, (long)seed);
+    printf("%s:%s (seed %ld)\n", encode_params(p, true), desc, (long)seed);
+
     if (aux) {
         /* We just generated this ourself. */
         if (verbose || print) {
