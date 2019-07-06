@@ -1123,6 +1123,7 @@ const struct game thegame = {
 };
 
 #ifdef STANDALONE_SOLVER
+#include <time.h>
 
 int main(int argc, char **argv)
 {
@@ -1130,7 +1131,8 @@ int main(int argc, char **argv)
     game_state *state;
     char *id = NULL, *desc;
     const char *err;
-    bool grade = false;
+    bool grade = false, generate = false;
+    time_t seed = time(NULL);
     char *progname = argv[0];
 
     char buf[80];
@@ -1139,7 +1141,14 @@ int main(int argc, char **argv)
 
     while (--argc > 0) {
         char *p = *++argv;
-        if (!strcmp(p, "-v")) {
+        if (!strcmp(p, "--seed")) {
+            if (argc == 0) {
+                fprintf(stderr, "--seed needs an argument");
+                return 1;
+            }
+            seed = (time_t) atoi(*++argv);
+            argc--;
+        } else if (!strcmp(p, "-v")) {
             /* solver_show_working = true; */
         } else if (!strcmp(p, "-g")) {
             grade = true;
@@ -1151,28 +1160,37 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-g | -v] <game_id>\n", argv[0]);
-        return 1;
-    }
-
-    desc = strchr(id, ':');
-    if (!desc) {
-        fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
-        return 1;
-    }
-    *desc++ = '\0';
-
     params = default_params();
-    decode_params(params, id);
-    err = validate_desc(params, desc);
-    if (err) {
-        free_params(params);
-        fprintf(stderr, "%s: %s\n", argv[0], err);
-        return 1;
+    if (id) {
+        decode_params(params, id);
+        desc = strchr(id, ':');
+    }
+    if (id && desc) {
+        *desc++ = '\0';
+
+        err = validate_desc(params, desc);
+        if (err) {
+            free_params(params);
+            fprintf(stderr, "%s: %s\n", argv[0], err);
+            return 1;
+        }
+    } else {
+        char *aux = NULL;
+        random_state *rs = random_new((void *) &seed, sizeof(time_t));
+        desc = new_game_desc(params, rs, &aux, false);
+        generate = true;
     }
 
     state = new_game(NULL, params, desc);
+
+    if(generate) {
+        printf("Fifteen: %s\n", encode_params(params, true));
+        printf("Game ID: %s\n", desc);
+        printf("Seed: %ld\n", seed);
+        printf("%s\n", game_text_format(state));
+        return 0;
+    }
+
     free_params(params);
 
     solvable = (PARITY_S(state) == perm_parity(state->tiles, state->n));
