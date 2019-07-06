@@ -2177,7 +2177,7 @@ static void check(game_params *p)
     }
 }
 
-static int gen(game_params *p, random_state *rs, int debug)
+static int gen(game_params *p, random_state *rs, int debug, time_t seed)
 {
     char *desc, *aux;
     int diff;
@@ -2186,6 +2186,9 @@ static int gen(game_params *p, random_state *rs, int debug)
 
     solver_show_working = debug;
     desc = new_game_desc(p, rs, &aux, false);
+    printf("Unequal: %s\n", encode_params(p, true));
+    printf("Seed: %ld\n", seed);
+    printf("Game ID: %s\n", desc);
     diff = solve(p, desc, debug);
     sfree(aux);
     sfree(desc);
@@ -2295,14 +2298,14 @@ int main(int argc, const char *argv[])
                 solve(p, desc, verbose);
             } else {
                 decode_params(p, id);
-                diff = gen(p, rs, verbose);
+                diff = gen(p, rs, verbose, seed);
             }
         }
     } else {
             p = default_params();
             p->order = random_upto(rs, 7) + 3;
             p->diff = random_upto(rs, 4);
-            diff = gen(p, rs, verbose);
+            diff = gen(p, rs, verbose, seed);
             pdiff(diff);
     }
 
