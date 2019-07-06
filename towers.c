@@ -2043,20 +2043,29 @@ const struct game thegame = {
 #ifdef STANDALONE_SOLVER
 
 #include <stdarg.h>
+#include <time.h>
 
 int main(int argc, char **argv)
 {
     game_params *p;
     game_state *s;
-    char *id = NULL, *desc;
+    char *id = NULL, *desc = NULL;
     const char *err;
     bool grade = false;
     int ret, diff;
-    bool really_show_working = false;
+    bool really_show_working = false, generate = false;
+    time_t seed = time(NULL);
 
     while (--argc > 0) {
         char *p = *++argv;
-        if (!strcmp(p, "-v")) {
+        if (!strcmp(p, "--seed")) {
+            if (argc == 0) {
+                fprintf(stderr, "--seed needs an argument");
+                return 1;
+            }
+            seed = (time_t) atoi(*++argv);
+            argc--;
+        } else if (!strcmp(p, "-v")) {
             really_show_working = true;
         } else if (!strcmp(p, "-g")) {
             grade = true;
@@ -2068,26 +2077,35 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-g | -v] <game_id>\n", argv[0]);
-        return 1;
-    }
-
-    desc = strchr(id, ':');
-    if (!desc) {
-        fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
-        return 1;
-    }
-    *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
-    err = validate_desc(p, desc);
-    if (err) {
-        fprintf(stderr, "%s: %s\n", argv[0], err);
-        return 1;
+    if (id) {
+        decode_params(p, id);
+        desc = strchr(id, ':');
     }
+    if (id && desc) {
+        *desc++ = '\0';
+
+        decode_params(p, id);
+        err = validate_desc(p, desc);
+        if (err) {
+            fprintf(stderr, "%s: %s\n", argv[0], err);
+            return 1;
+        }
+    } else {
+        char *aux = NULL;
+        random_state *rs = random_new((void *) &seed, sizeof(time_t));
+        desc = new_game_desc(p, rs, &aux, false);
+        generate = true;
+    }
+
     s = new_game(NULL, p, desc);
+    if(generate) {
+        printf("Towers: %s\n", encode_params(p, true));
+        printf("Game ID: %s\n", desc);
+        printf("Seed: %ld\n", seed);
+        printf("%s\n", game_text_format(s));
+        return 0;
+    }
 
     /*
      * When solving an Easy puzzle, we don't want to bother the
