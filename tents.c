@@ -2640,6 +2640,7 @@ const struct game thegame = {
 #ifdef STANDALONE_SOLVER
 
 #include <stdarg.h>
+#include <time.h>
 
 int main(int argc, char **argv)
 {
@@ -2649,7 +2650,8 @@ int main(int argc, char **argv)
     const char *err;
     bool grade = false;
     int ret, diff;
-    bool really_verbose = false;
+    bool really_verbose = false, generate = false;
+    time_t seed = time(NULL);
     struct solver_scratch *sc;
 
     while (--argc > 0) {
@@ -2666,26 +2668,35 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!id) {
-        fprintf(stderr, "usage: %s [-g | -v] <game_id>\n", argv[0]);
-        return 1;
-    }
-
-    desc = strchr(id, ':');
-    if (!desc) {
-        fprintf(stderr, "%s: game id expects a colon in it\n", argv[0]);
-        return 1;
-    }
-    *desc++ = '\0';
-
     p = default_params();
-    decode_params(p, id);
-    err = validate_desc(p, desc);
-    if (err) {
-        fprintf(stderr, "%s: %s\n", argv[0], err);
-        return 1;
+    if (id) {
+        decode_params(p, id);
+        desc = strchr(id, ':');
+    }
+    if (id && desc) {
+        *desc++ = '\0';
+
+        p = default_params();
+        decode_params(p, id);
+        err = validate_desc(p, desc);
+        if (err) {
+            fprintf(stderr, "%s: %s\n", argv[0], err);
+            return 1;
+        }
+    } else {
+        char *aux = NULL;
+        random_state *rs = random_new((void *) &seed, sizeof(time_t));
+        desc = new_game_desc(p, rs, &aux, false);
+        generate = true;
     }
     s = new_game(NULL, p, desc);
+    if(generate) {
+        printf("Towers: %s\n", encode_params(p, true));
+        printf("Game ID: %s\n", desc);
+        printf("Seed: %ld\n", seed);
+        printf("%s\n", game_text_format(s));
+        return 0;
+    }
     s2 = new_game(NULL, p, desc);
 
     sc = new_scratch(p->w, p->h);
