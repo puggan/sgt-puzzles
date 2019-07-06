@@ -5690,8 +5690,9 @@ int main(int argc, char **argv)
     dlev.maxkdiff = DIFF_KINTERSECT;
     if(generate) {
         printf("Solo: %s\n", encode_params(p, true));
-        printf("%s\n", game_text_format(s));
+        printf("Game ID: %s\n", desc);
         printf("Seed: %ld\n", seed);
+        printf("%s\n", game_text_format(s));
         return 0;
     }
     solver(s->cr, s->blocks, s->kblocks, s->xtype, s->grid, s->kgrid, &dlev);
