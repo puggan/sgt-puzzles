@@ -2297,6 +2297,8 @@ int main(int argc, const char *argv[])
                 }
                 solve(p, desc, verbose);
             } else {
+                p->order = random_upto(rs, 7) + 3;
+                p->diff = random_upto(rs, 4);
                 decode_params(p, id);
                 diff = gen(p, rs, verbose, seed);
             }
